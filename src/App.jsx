@@ -1,4 +1,4 @@
-import React, { useState,useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import InfoCard from "./InfoCard";
 import { PieChart, Pie, Cell, Legend, Tooltip } from "recharts";
 import TransactionList from "./TransactionList";
@@ -12,19 +12,23 @@ const COLORS = ["#A000FF", "#FF9304", "yellow"];
 const App = () => {
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
-  const [balance, setBalance] = useState(4650);
-  const [expenseData, setExpenseData] = useState(data);
-  const [totExpenses, setTotExpenses] = useState(0);
   const [type, setType] = useState("");
   const [editId, setEditId] = useState("");
+  const [balance, setBalance] = useState(() => {
+    return parseInt(localStorage.getItem("balance")) || 4650;
+  });
+  const [expenseData, setExpenseData] = useState(() => {
+    const savedData = localStorage.getItem("expenseData");
+    return savedData ? JSON.parse(savedData) : data;
+  });
+  const [totExpenses, setTotExpenses] = useState(() => {
+    return parseInt(localStorage.getItem("totExpenses")) || 0;
+  });
 
-
-
-  const handleAddExpense = (type,editId) => {
+  const handleAddExpense = (type, editId) => {
     setEditId(editId);
     setType(type);
     setIsExpenseModalOpen(true);
-
   };
 
   const handleAddIncome = () => {
@@ -39,6 +43,7 @@ const App = () => {
   const closeIncomeModal = () => {
     setIsIncomeModalOpen(false);
   };
+
   function formatDate(inputDate) {
     const months = [
       "January",
@@ -60,45 +65,43 @@ const App = () => {
   }
 
   const addExpense = (formData) => {
-   let newData={...formData,date:formatDate(formData.date)};
-   console.log(newData);
-    if(editId){
+    let newData = { ...formData, date: formatDate(formData.date) };
+    console.log(newData);
+    if (editId) {
       const expense = expenseData.find((expense) => expense.id === editId);
       const index = expenseData.indexOf(expense);
       expenseData[index] = newData;
       setExpenseData([...expenseData]);
       setEditId("");
-    }
-    else{
+    } else {
       console.log("New Expense:", formData);
       console.log(formData);
-      if(formData.amount<=balance ){
+      if (formData.amount <= balance) {
         setExpenseData((expenseData) => [...expenseData, newData]);
         setBalance((balance) => balance - formData.amount);
-      }
-      else{
+      } else {
         alert("Insufficient Balance");
       }
     }
   };
 
   const addIncome = (amount) => {
-    // Logic to add income
     setBalance((balance) => balance + parseInt(amount));
     closeIncomeModal();
   };
+
   console.log(expenseData);
 
   const editExpense = (expense) => {
     // Logic to edit expense
-  }
+  };
+
   const deleteExpense = (id) => {
     const expense = expenseData.find((expense) => expense.id === id);
     const index = expenseData.indexOf(expense);
     expenseData.splice(index, 1);
     setExpenseData([...expenseData]);
-    //setBalance((balance) => balance + parseInt(expense.amount));
-  }
+  };
 
   // Aggregate data by category
   const aggregatedData = expenseData.reduce((acc, curr) => {
@@ -111,7 +114,7 @@ const App = () => {
     }
     return acc;
   }, {});
-  console.log(aggregatedData); 
+  console.log(aggregatedData);
 
   // Convert aggregatedData to array for the pie chart
   const pieChartData = Object.keys(aggregatedData).map((category) => ({
@@ -119,24 +122,33 @@ const App = () => {
     amount: aggregatedData[category],
   }));
 
-  useEffect(() =>{
-    const tot=expenseData.reduce((acc,curr) => {
-      return acc+parseInt(curr.amount);
-    },0);
+  useEffect(() => {
+    const tot = expenseData.reduce((acc, curr) => {
+      return acc + parseInt(curr.amount);
+    }, 0);
     setTotExpenses(tot);
-  },[expenseData]);
-  //  useEffect(() => {
-  //    setBalance((balance) =>{ return balance-totExpenses})
-  //  }, []);
+  }, [expenseData]);
+
+  useEffect(() => {
+    localStorage.setItem("balance", balance);
+  }, [balance]);
+
+  useEffect(() => {
+    localStorage.setItem("expenseData", JSON.stringify(expenseData));
+  }, [expenseData]);
+
+  useEffect(() => {
+    localStorage.setItem("totExpenses", totExpenses);
+  }, [totExpenses]);
 
   return (
     <div className="min-h-screen bg-[#3B3B3B] p-4 ">
       <header className="text-white text-2xl font-bold mb-4">
         Expense Tracker
       </header>
-      <div className=" px-4 bg-[#626262] rounded-lg shadow-md ">
+      <div className="px-4 bg-[#626262] rounded-lg shadow-md">
         <div className="flex flex-wrap -mx-2 items-center">
-          <div className="w-full md:w-1/3 px-2 mb-4 md:mb-0 ">
+          <div className="w-full md:w-1/3 px-2 mb-4 md:mb-0">
             <InfoCard
               title="Wallet Balance"
               amount={balance}
@@ -155,7 +167,7 @@ const App = () => {
             />
           </div>
           <div className="w-full md:w-1/3 px-2">
-            <div className="bg-transparent  rounded-lg p-4">
+            <div className="bg-transparent rounded-lg p-4">
               <PieChart width={300} height={300}>
                 <Pie
                   data={pieChartData}
@@ -200,7 +212,7 @@ const App = () => {
           <header className="text-white text-2xl font-bold mb-4 mt-2 italic">
             Top Expenses
           </header>
-          <TopExpenses data={expenseData}/>
+          <TopExpenses data={expenseData} />
         </div>
       </div>
       <AddExpenseModal
